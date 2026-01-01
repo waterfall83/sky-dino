@@ -1,3 +1,5 @@
+// TODO: add more game modes (dark mode, more obstacles, changing platforms/actions, etc)
+
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
@@ -5,12 +7,11 @@ let gameOver = false;
 let gameStarted = false;
 let score = 0;
 let highScore = 0;
-let baseSpeed = Math.max(5, canvas.width / 400);
 let showHelp = false;
-let hasPlayedOnce = false; // track if user has played at least once (for reset logic)
+let hasPlayedOnce = false;
 
 
-// sound effect for jump
+// jump sound effects
 function playJumpSound() {
   const context = new (window.AudioContext || window.webkitAudioContext)();
   const oscillator = context.createOscillator();
@@ -31,7 +32,7 @@ function playJumpSound() {
 }
 
 
-// background music
+// bg music
 const bgMusic = new Audio("assets/background.mp3");
 bgMusic.loop = true;
 bgMusic.volume = 0.3;
@@ -42,7 +43,7 @@ function startBgMusic() {
   });
 }
 
-function fadeOutBgMusic(duration = 2000) { // fade out over 2 seconds by default
+function fadeOutBgMusic(duration = 2000) {
   const initialVolume = bgMusic.volume;
   const stepTime = 50;
   let elapsed = 0;
@@ -64,31 +65,54 @@ function fadeOutBgMusic(duration = 2000) { // fade out over 2 seconds by default
 
 // canvas resizing
 function resizeCanvas() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = window.innerWidth * dpr;
+  canvas.height = window.innerHeight * dpr;
+  canvas.style.width = window.innerWidth + "px";
+  canvas.style.height = window.innerHeight + "px";
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.scale(dpr, dpr);
+
+  // Update dependent variables on resize
+  updateSizes();
 }
+
 window.addEventListener("resize", resizeCanvas);
 resizeCanvas();
 
 
-// define constants
-const SKY_OFFSET = 300;
-const PLATFORM_HEIGHT = 20;
+// relative sizing
+let SKY_OFFSET, PLATFORM_HEIGHT, BASE_SPEED;
+let dino, platforms;
+
+function updateSizes() {
+  SKY_OFFSET = canvas.height * 0.2;
+  PLATFORM_HEIGHT = canvas.height * 0.02;
+  BASE_SPEED = Math.max(5, canvas.width / 400);
+
+  if (!dino) return;
+
+  dino.width = canvas.width * 0.08;
+  dino.height = canvas.height * 0.08;
+  dino.x = canvas.width * 0.1;
+  if (!gameStarted) {
+    dino.y = canvas.height - SKY_OFFSET - dino.height;
+  }
+}
 
 
 // dino object
-const dino = {
-  x: 120,
-  y: canvas.height - SKY_OFFSET - 80,
-  width: 80,
-  height: 80,
+dino = {
+  x: canvas.width * 0.1,
+  y: canvas.height * 0.8,
+  width: canvas.width * 0.08,
+  height: canvas.height * 0.08,
   velocityY: 0,
-  gravity: 1.0,
-  jumpStrength: -18,
+  gravity: canvas.height * 0.006,
+  jumpStrength: -canvas.height * 0.03,
   onGround: true,
   doubleJumpUsed: false
 };
-
 
 // dino sprites
 const dinoLeft = new Image();
@@ -101,9 +125,7 @@ let legFrameCounter = 0;
 const legSwitchRate = 6;
 
 
-//platforms
-let platforms = [];
-
+// platforms
 function initPlatforms() {
   platforms = [
     { x: 0, y: canvas.height - SKY_OFFSET, width: canvas.width, height: PLATFORM_HEIGHT }
@@ -117,7 +139,7 @@ initPlatforms();
 document.addEventListener("keydown", (e) => {
   if (!gameStarted && e.code === "Space") {
     gameStarted = true;
-    if (!hasPlayedOnce) startBgMusic(); // start music only on first actual play
+    if (!hasPlayedOnce) startBgMusic();
     return;
   }
 
@@ -135,7 +157,7 @@ document.addEventListener("keydown", (e) => {
   }
 
   if (gameOver && e.key.toLowerCase() === "r") {
-    resetGame(true); // restart without showing home screen
+    resetGame(true);
   }
 });
 
@@ -154,7 +176,7 @@ canvas.addEventListener("click", (e) => {
 // reset game
 function resetGame(skipHome = false) {
   gameOver = false;
-  gameStarted = skipHome || hasPlayedOnce; // skip home screen if already played once
+  gameStarted = skipHome || hasPlayedOnce;
   hasPlayedOnce = true;
 
   dino.y = canvas.height - SKY_OFFSET - dino.height;
@@ -168,7 +190,7 @@ function resetGame(skipHome = false) {
   legFrameCounter = 0;
 
   if (!bgMusic.paused) {
-    bgMusic.currentTime = 0; // reset music
+    bgMusic.currentTime = 0;
     bgMusic.volume = 0.3;
   } else {
     startBgMusic();
@@ -180,20 +202,26 @@ function resetGame(skipHome = false) {
 function update() {
   if (!gameStarted) return;
 
-  const PLATFORM_SPEED = baseSpeed + score / 500;
+  const PLATFORM_SPEED = BASE_SPEED + score / 500;
   score += 1;
 
   dino.velocityY += dino.gravity;
   dino.y += dino.velocityY;
+
+  // Prevent dino from going too high
+  if (dino.y < canvas.height * 0.05) {
+    dino.y = canvas.height * 0.05;
+    dino.velocityY = 0;
+  }
 
   platforms.forEach(p => { p.x -= PLATFORM_SPEED; });
 
   const lastPlatform = platforms[platforms.length - 1];
   if (lastPlatform.x + lastPlatform.width < canvas.width) {
     platforms.push({
-      x: canvas.width + 200 + Math.random() * 200,
-      y: canvas.height - (SKY_OFFSET + 50 + Math.random() * 100),
-      width: 150 + Math.random() * 50,
+      x: canvas.width + canvas.width * 0.2 + Math.random() * canvas.width * 0.2,
+      y: canvas.height - (SKY_OFFSET + canvas.height * 0.05 + Math.random() * canvas.height * 0.1),
+      width: canvas.width * 0.15 + Math.random() * canvas.width * 0.05,
       height: PLATFORM_HEIGHT
     });
   }
@@ -203,7 +231,7 @@ function update() {
     if (
       dino.x < p.x + p.width &&
       dino.x + dino.width > p.x &&
-      dino.y + dino.height <= p.y + 10 &&
+      dino.y + dino.height <= p.y + dino.height * 0.1 &&
       dino.y + dino.height + dino.velocityY >= p.y
     ) {
       dino.y = p.y - dino.height;
@@ -213,10 +241,10 @@ function update() {
     }
   });
 
-  if (dino.y > canvas.height + 200 && !gameOver) {
+  if (dino.y > canvas.height + dino.height && !gameOver) {
     gameOver = true;
     if (score > highScore) highScore = score;
-    fadeOutBgMusic(); // fade music on game over
+    fadeOutBgMusic();
   }
 
   if (dino.onGround && gameStarted && !gameOver) {
@@ -232,7 +260,7 @@ function update() {
 }
 
 
-// draw
+//draw
 function draw() {
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -240,51 +268,50 @@ function draw() {
   // score
   ctx.fillStyle = "black";
   ctx.textAlign = "right";
-  ctx.font = "32px 'Coral Pixels', serif";
+  ctx.font = `${Math.floor(canvas.height * 0.03)}px 'Coral Pixels', serif`;
   ctx.fillText("SCORE: " + Math.floor(score), canvas.width - 40, 40);
   ctx.fillText("HIGH SCORE: " + Math.floor(highScore), canvas.width - 40, 80);
 
-  // info/help button
+  // help button
   const helpX = 40, helpY = 40;
   ctx.fillStyle = "black";
-  ctx.font = "32px 'Coral Pixels', serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText("?", helpX, helpY);
 
-  // instructions
+  // instructions popup
   if (showHelp) {
-  const popupWidth = 380, popupHeight = 260;
-  const popupX = helpX + 10;
-  const popupY = helpY + 40;
+    const popupWidth = canvas.width * 0.35;
+    const popupHeight = canvas.height * 0.35;
+    const popupX = helpX + 10;
+    const popupY = helpY + 40;
 
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(popupX, popupY, popupWidth, popupHeight);
-  ctx.strokeStyle = "black";
-  ctx.lineWidth = 2;
-  ctx.strokeRect(popupX, popupY, popupWidth, popupHeight);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(popupX, popupY, popupWidth, popupHeight);
+    ctx.strokeStyle = "black";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(popupX, popupY, popupWidth, popupHeight);
 
-  ctx.fillStyle = "black";
-  ctx.textAlign = "left";
-  ctx.font = "20px 'Coral Pixels', serif";
+    ctx.fillStyle = "black";
+    ctx.textAlign = "left";
+    ctx.font = `${Math.floor(canvas.height * 0.02)}px 'Coral Pixels', serif`;
 
-  const instructions = [
-    "Inspired by the Chrome Dino Game!",
-    " ",
-    "INSTRUCTIONS:",
-    "- Press SPACEBAR to jump.",
-    "- You can double-jump once per jump.",
-    "- Avoid falling off the platforms.",
-    "- Speed increases over time.",
-    "- Press R to restart after game over."
-  ];
+    const instructions = [
+      "Inspired by the Chrome Dino Game!",
+      " ",
+      "INSTRUCTIONS:",
+      "- Press SPACEBAR to jump.",
+      "- You can double-jump once per jump.",
+      "- Avoid falling off the platforms.",
+      "- Speed increases over time.",
+      "- Press R to restart after game over."
+    ];
+    instructions.forEach((line, i) => {
+      ctx.fillText(line, popupX + 10, popupY + 30 + i * canvas.height * 0.03);
+    });
+  }
 
-  instructions.forEach((line, i) => {
-    ctx.fillText(line, popupX + 10, popupY + 30 + i * 30);
-  });
-}
-
-  // dino leg animation
+  // draw dino
   const dinoSprite = (dino.onGround) ? (legToggle ? dinoLeft : dinoRight) : dinoLeft;
   if (dinoSprite.complete && dinoSprite.naturalWidth !== 0) {
     ctx.drawImage(dinoSprite, dino.x, dino.y, dino.width, dino.height);
@@ -293,8 +320,7 @@ function draw() {
     ctx.fillRect(dino.x, dino.y, dino.width, dino.height);
   }
 
-
-  // platform animations
+  // draw platforms
   platforms.forEach(p => {
     ctx.fillStyle = "white";
     ctx.fillRect(p.x, p.y, p.width, p.height);
@@ -303,27 +329,25 @@ function draw() {
     ctx.strokeRect(p.x, p.y, p.width, p.height);
   });
 
-
-  // start screen (initial screen)
+  // start screen
   if (!gameStarted && !hasPlayedOnce) {
     ctx.fillStyle = "black";
     ctx.textAlign = "center";
-    ctx.font = "72px 'Coral Pixels', serif";
+    ctx.font = `${Math.floor(canvas.height * 0.08)}px 'Coral Pixels', serif`;
     ctx.fillText("SKY DINO", canvas.width / 2, canvas.height / 2 - 60);
-    ctx.font = "32px 'Coral Pixels', serif";
+    ctx.font = `${Math.floor(canvas.height * 0.04)}px 'Coral Pixels', serif`;
     ctx.fillText("Press SPACEBAR to start", canvas.width / 2, canvas.height / 2 + 20);
   }
 
-
-  // game over screen (end screen)
+  // game over screen
   if (gameOver) {
     ctx.fillStyle = "rgba(0,0,0,0)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = "white";
     ctx.textAlign = "center";
-    ctx.font = "64px 'Coral Pixels', serif";
+    ctx.font = `${Math.floor(canvas.height * 0.07)}px 'Coral Pixels', serif`;
     ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2 - 40);
-    ctx.font = "32px 'Coral Pixels', serif";
+    ctx.font = `${Math.floor(canvas.height * 0.035)}px 'Coral Pixels', serif`;
     ctx.fillText("Press R to replay", canvas.width / 2, canvas.height / 2 + 20);
   }
 }
