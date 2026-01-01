@@ -9,7 +9,7 @@ let gameOver = false;
 let gameStarted = false;
 let score = 0;
 let highScore = 0;
-let baseSpeed = 5; 
+let baseSpeed = 6; 
 let showHelp = false;
 let hasPlayedOnce = false;
 
@@ -104,7 +104,7 @@ dinoRight.src = "assets/dino_right.webp";
 
 let legToggle = true;
 let legFrameCounter = 0;
-const legSwitchRate = 6;
+const legSwitchRate = 5;
 
 // platforms
 let platforms = [];
@@ -172,7 +172,7 @@ function resetGame(skipHome=false){
 // update game
 function update(){
   if(!gameStarted) return;
-  const PLATFORM_SPEED = baseSpeed + score/500;
+  const PLATFORM_SPEED = baseSpeed + score/350;
   score+=1;
   dino.velocityY+=dino.gravity;
   dino.y+=dino.velocityY;
