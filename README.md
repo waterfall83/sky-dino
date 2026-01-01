@@ -7,18 +7,18 @@ Sky Dino is an endless runner game inspired by the Chrome Dino game. Jump and do
 - Score and high score tracking
 - Background music with fade-out on game over
 - Help button with instructions
-- Responsive design (works on different screen sizes)
+- Responsive design
 
 ## Controls
 - **SPACEBAR**: Jump / Double-jump
 - **R**: Restart game after game over
-- **Click `?` button**: Show/hide instructions
+- **Click `?` icon**: Show/hide instructions
 
 ## How to Play
 1. Open `index.html` in a modern browser.
 2. Press **SPACEBAR** to start.
 3. Jump across platforms and survive as long as you can!
-4. When you fall, press **R** to replay without going back to the home screen.
+4. When the game ends, press **R** to replay without going back to the home screen.
 
 ## Installation
 Clone the repo:
