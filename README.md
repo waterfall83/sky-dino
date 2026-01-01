@@ -26,6 +26,7 @@ Clone the repo:
 git clone https://github.com/waterfall83/sky-dino.git
 cd sky-dino
 ```
+Open index.html in your browser.
 
 ## Assets
 - Dino sprites: assets/dino_left.webp and assets/dino_right.webp
