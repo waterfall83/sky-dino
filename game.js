@@ -1,3 +1,6 @@
+// TODO 1: add new features like differing obstacles or game modes as the game progresses
+// TODO 2: add a volume button to mute/unmute bg music
+
 // initial setup
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
@@ -34,17 +37,33 @@ function playJumpSound() {
 const bgMusic = new Audio("assets/background.mp3");
 bgMusic.loop = true;
 bgMusic.volume = 0.3;
-function startBgMusic() { bgMusic.play().catch(()=>{console.log("Autoplay blocked");}); }
+let fadeInterval = null;
+
 function fadeOutBgMusic(duration=2000) {
+  if (fadeInterval) clearInterval(fadeInterval); // cancel any previous fade
   const initialVolume = bgMusic.volume;
   const stepTime = 50;
   let elapsed = 0;
-  const fadeInterval = setInterval(()=>{
+  fadeInterval = setInterval(()=>{
     elapsed+=stepTime;
     const fraction = elapsed/duration;
-    if(fraction>=1){ bgMusic.volume=0; bgMusic.pause(); bgMusic.currentTime=0; clearInterval(fadeInterval); }
+    if(fraction>=1){ 
+      bgMusic.volume=0; 
+      bgMusic.pause(); 
+      bgMusic.currentTime=0; 
+      clearInterval(fadeInterval); 
+      fadeInterval = null;
+    }
     else { bgMusic.volume=initialVolume*(1-fraction); }
   }, stepTime);
+}
+
+function startBgMusic() {
+  if (fadeInterval) { clearInterval(fadeInterval); fadeInterval = null; }
+  bgMusic.pause();
+  bgMusic.currentTime = 0;
+  bgMusic.volume = 0.3;
+  bgMusic.play().catch(()=>{console.log("Autoplay blocked");});
 }
 
 // resize and scale
@@ -96,12 +115,28 @@ initPlatforms();
 
 // input
 document.addEventListener("keydown", (e)=>{
-  if(!gameStarted && e.code==="Space"){ gameStarted=true; if(!hasPlayedOnce) startBgMusic(); return; }
-  if(!gameOver && gameStarted && e.code==="Space"){
-    if(dino.onGround){ dino.velocityY=dino.jumpStrength; dino.onGround=false; dino.doubleJumpUsed=false; playJumpSound();}
-    else if(!dino.doubleJumpUsed){ dino.velocityY=dino.jumpStrength; dino.doubleJumpUsed=true; playJumpSound();}
+  if(!gameStarted && e.code==="Space"){ 
+    gameStarted=true; 
+    if(!hasPlayedOnce) startBgMusic(); 
+    return; 
   }
-  if(gameOver && e.key.toLowerCase()==="r"){ resetGame(true); }
+  if(!gameOver && gameStarted && e.code==="Space"){
+    if(dino.onGround){ 
+      dino.velocityY=dino.jumpStrength; 
+      dino.onGround=false; 
+      dino.doubleJumpUsed=false; 
+      playJumpSound();
+    }
+    else if(!dino.doubleJumpUsed){ 
+      dino.velocityY=dino.jumpStrength; 
+      dino.doubleJumpUsed=true; 
+      playJumpSound();
+    }
+  }
+  if(gameOver && e.key.toLowerCase()==="r"){ 
+    resetGame(true); 
+    startBgMusic(); // play music on R
+  }
 });
 
 canvas.addEventListener("click", (e)=>{
@@ -126,7 +161,12 @@ function resetGame(skipHome=false){
   initPlatforms();
   legToggle=true;
   legFrameCounter=0;
-  if(!bgMusic.paused){ bgMusic.currentTime=0; bgMusic.volume=0.3; } else { startBgMusic(); }
+  if(!bgMusic.paused){ 
+    bgMusic.currentTime=0; 
+    bgMusic.volume=0.3; 
+  } else { 
+    startBgMusic(); 
+  }
 }
 
 // update game
@@ -160,7 +200,11 @@ function update(){
   });
 
   // dino running animations
-  if(dino.y>BASE_HEIGHT+200 && !gameOver){ gameOver=true; if(score>highScore) highScore=score; fadeOutBgMusic(); }
+  if(dino.y>BASE_HEIGHT+200 && !gameOver){ 
+    gameOver=true; 
+    if(score>highScore) highScore=score; 
+    fadeOutBgMusic(); 
+  }
   if(dino.onGround && gameStarted && !gameOver){
     legFrameCounter++;
     if(legFrameCounter>=legSwitchRate){ legToggle=!legToggle; legFrameCounter=0; }
@@ -219,18 +263,25 @@ function draw(){
 
   // dino
   const dinoSprite=(dino.onGround)?(legToggle?dinoLeft:dinoRight):dinoLeft;
-  if(dinoSprite.complete && dinoSprite.naturalWidth!==0){ ctx.drawImage(dinoSprite,dino.x,dino.y,dino.width,dino.height);}
-  else{ ctx.fillStyle="green"; ctx.fillRect(dino.x,dino.y,dino.width,dino.height); }
+  if(dinoSprite.complete && dinoSprite.naturalWidth!==0){ 
+    ctx.drawImage(dinoSprite,dino.x,dino.y,dino.width,dino.height);
+  } else { 
+    ctx.fillStyle="green"; 
+    ctx.fillRect(dino.x,dino.y,dino.width,dino.height); 
+  }
 
   // platforms
   platforms.forEach(p=>{
-    ctx.fillStyle="white"; ctx.fillRect(p.x,p.y,p.width,p.height);
-    ctx.strokeStyle="black"; ctx.lineWidth=2; ctx.strokeRect(p.x,p.y,p.width,p.height);
+    ctx.fillStyle="white"; 
+    ctx.fillRect(p.x,p.y,p.width,p.height);
+    ctx.strokeStyle="black"; 
+    ctx.lineWidth=2; 
+    ctx.strokeRect(p.x,p.y,p.width,p.height);
   });
 
-  // start game screen centered using actual canvas size
+  // start game screen centered
   if(!gameStarted && !hasPlayedOnce){
-    ctx.setTransform(1,0,0,1,0,0); // reset scale
+    ctx.setTransform(1,0,0,1,0,0);
     ctx.fillStyle="black"; 
     ctx.textAlign="center"; 
     ctx.textBaseline="middle";
