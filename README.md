@@ -1,5 +1,6 @@
 # Sky Dino
 Sky Dino is an endless runner game inspired by the Chrome Dino game. Jump and double-jump across platforms, avoid falling, and try to beat your high score! It features smooth animations, sound effects, and background music.
+Play it at https://waterfall83.github.io/sky-dino/
 
 ## Features
 - Jump and double-jump mechanics
