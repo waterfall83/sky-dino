@@ -25,6 +25,7 @@ Clone the repo:
 ```bash
 git clone https://github.com/waterfall83/sky-dino.git
 cd sky-dino
+```
 
 ## Assets
 - Dino sprites: assets/dino_left.webp and assets/dino_right.webp
